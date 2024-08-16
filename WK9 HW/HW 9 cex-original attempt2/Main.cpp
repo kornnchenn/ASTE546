@@ -20,7 +20,7 @@ int main(int argc, char *args[])
 	/*initialize domain*/
     World world(31,81,71);
     world.setExtents({0,-0.4,0},{0.3,0.4,0.7});
-    world.setTime(2e-7,500);
+    world.setTime(2e-7,5000);
 
 
 	/*set objects*/
@@ -33,8 +33,8 @@ int main(int argc, char *args[])
 
 	/*set up particle species*/
     vector<Species> species;
-    species.push_back(Species("X", 13*AMU, 0, 2e9, world));
-	species.push_back(Species("X+", 13*AMU, QE, 5e1, world));
+    species.push_back(Species("X", 131.3*AMU, 0, 2e9, world));
+	species.push_back(Species("X+", 13*AMU, QE, 5e8, world));
 	Species &neutrals = species[0];
 	Species &ions = species[1];
 	
@@ -45,10 +45,10 @@ int main(int argc, char *args[])
 	sources.emplace_back(new WarmBeamSource(neutrals,world,7000,nda,1000));	*/	//neutral source
 
 	/*setup injection sources*/
-    const double nda = 2e20;            //neutral density
+    //const double nda = 2e20;            //neutral density
     const double ndi = 1e17;            //mean ion density --- changed in step 5
     vector<unique_ptr<Source>> sources;
-    sources.emplace_back(new WarmBeamSource(neutrals,world,{0,0,0.1}, 0.02, 0.1e-6 ,500, 300));  //neutral source
+    //sources.emplace_back(new WarmBeamSource(neutrals,world,{0,0,0.1}, 0.02, 0.1e-6 ,500, 300));  //neutral source
     sources.emplace_back(new WarmBeamSource(ions,world,{0,0,0.1}, 0.02, 0.8e-6 , 15000, 1e4));   //ions source
 
 	
