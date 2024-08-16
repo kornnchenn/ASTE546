@@ -60,7 +60,8 @@ void WarmBeamSource::sample()
 		radius = sqrt(rnd() * (0.02 * 0.02));
 		x = radius * cos(angle*(M_PI/180));
 		y = radius * sin(angle*(M_PI/180));
-		pos = {x,y, x0[2]};
+		//pos = {x,y, x0[2]};
+		pos = {x,y, 0.1}; // if I use the z fromt the origin, x0[2] then won't that be at 0 and not coming out of the box?
 		double3 vel = sp.sampleIsotropicVel(T);
         vel[2] += v_drift; //add drift component
 
