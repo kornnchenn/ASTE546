@@ -29,7 +29,7 @@ int main(int argc, char *args[])
 		phi_sphere = atof(args[1]);	//convert argument to float
 	cout<<"Sphere potential: "<<phi_sphere<<" V"<<endl;
     world.addBox({-0.1,-0.1,0},{0.1,0.1,0.1},phi_sphere);
-    world.addInlet();
+
 
 	/*set up particle species*/
     vector<Species> species;

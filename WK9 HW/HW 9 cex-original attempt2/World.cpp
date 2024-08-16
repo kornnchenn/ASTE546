@@ -106,12 +106,21 @@ void World::addBox(const double3 &box_x0, const double3 &box_xm, double phi_sphe
 }
 
 /*marks k=0 plane as 0V Dirichlet boundary*/
-void World::addInlet() {
+void World::addInlet(const double3 center, const double radius) {
 	for (int i=0;i<ni;i++)
 		for (int j=0;j<nj;j++)
 		{
-			object_id[i][j][0] = 2;
-			phi[i][j][0] = 0;
+			//object_id[i][j][0] = 2;
+			//phi[i][j][0] = 0;
+			double dx = i - center[0];
+			double dy = j - center[1];
+			double distance = sqrt(dx * dx + dy * dy);
+
+			if (distance <= radius) {
+				object_id[i][j][0] = 2;
+				phi[i][j][0] = 0;
+			}
+
 		}
 }
 

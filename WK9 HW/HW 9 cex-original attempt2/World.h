@@ -128,7 +128,8 @@ public:
 	bool inBox(const double3 &x);
 
 	/*marks the k=0 face as Dirichlet*/
-	void addInlet();
+	//updated to make it a circle on the box max point (0.1 in this case)
+	void addInlet(const double3 center, const double radius);
 
 	//mesh geometry
 	const int ni,nj,nk;	//number of nodes
