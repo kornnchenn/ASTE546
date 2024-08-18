@@ -34,8 +34,18 @@ vector<complex<double>> DFT(vector<complex<double>> function, double L, int mode
         fs_phi_x[k] += sum;
     }
 
+    //incorporate wave number, -k^2 term
+    /*
+    for (int k = 1; k<N; k++) {
+        double k_val = 2 * M_PI * k / L; //wave number
+        fs_phi_x[k] = fs_phi_x[k] / -(k_val * k_val);
+    }
+    fs_phi_x[0] = 0;
+    */
+
     return fs_phi_x;
 }
+
 
 // Inverse Discrete Fourier Transform (IDFT)
 vector<complex<double>> I_DFT(const vector<complex<double>>& F) {
@@ -50,6 +60,7 @@ vector<complex<double>> I_DFT(const vector<complex<double>>& F) {
             sum += F[k] * exp(i * angle);
         }
         ft_phi_x[n] = sum / static_cast<double>(N);
+        
     }
 
     return ft_phi_x;
@@ -58,7 +69,7 @@ vector<complex<double>> I_DFT(const vector<complex<double>>& F) {
 
 int main() {
     double L = 2 * M_PI;
-    int mode = 1;
+    int mode = 2;
     int N = 64;
     const double eps0 = 8.854187817e-12;
     vector<double> analysticalSolution = getAnalyticalSolution(L, mode, N);
@@ -77,6 +88,7 @@ int main() {
 
     vector<complex<double>> fs_phi_x = DFT(function, L, mode, N);
     ft_phi_x = I_DFT(fs_phi_x);
+
 
     ofstream out("FT.csv");
     out << "x, analytical, FT_real, FT_imaginary" << endl;
