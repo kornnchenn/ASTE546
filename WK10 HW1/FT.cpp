@@ -13,23 +13,24 @@ vector<double> getAnalyticalSolution(double L, int mode, int N){
     double c = 2 * M_PI * mode / L;
 
     for(int i = 0; i<N; i++){
-        phi_x[i] = (1/ (c * c)) * -sin(c * i);
+        phi_x[i] = (1/ (c * c)) * sin(c * i);
     }
     
     return phi_x;
 }
 
 // Discrete Fourier Transform (DFT)
-vector<complex<double>> DFT(vector<complex<double>> function, double L, int N) {
+vector<complex<double>> DFT(vector<complex<double>>& F, double L, int N) {
     vector<complex<double>> fs_phi_x(N);
     complex<double> i(0, 1);  // imaginary unit i = sqrt(-1)
     
     for(int k = 0; k<N; k++){
         complex<double> sum = 0.0;
-        for(int n = 0; n<N; n++){
-            double angle = 2 * M_PI * k * n / N;
+        fs_phi_x[0] = 0.0;
+        for(int n = 1; n<N; n++){
+            double c = (2 * M_PI * k * n) / N;
             //sum += function[n] * exp(-i * angle);
-            fs_phi_x[k] += function[n] * exp(-i * angle);
+            fs_phi_x[k] += F[n] * exp(-i * c);
         }
         //fs_phi_x[k] += sum;
     }
@@ -92,7 +93,7 @@ vector<complex<double>> I_DFT(const vector<complex<double>>& F) {
 
 int main() {
     double L = 2 * M_PI;
-    int mode = 1;
+    int mode = 2;
     int N = 64;
     const double eps0 = 8.854187817e-12;
     vector<double> analysticalSolution = getAnalyticalSolution(L, mode, N);
