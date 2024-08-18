@@ -95,7 +95,7 @@ vector<complex<double>> I_DFT(const vector<complex<double>>& F, int N) {
 
 int main() {
     double L = 2 * M_PI;
-    int mode = 2;
+    int mode = 4;
     int N = 64;
     const double eps0 = 8.854e-12;
 
