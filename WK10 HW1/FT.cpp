@@ -19,26 +19,28 @@ vector<double> getAnalyticalSolution(double L, int mode, int N){
     return phi_x;
 }
 
+// Discrete Fourier Transform (DFT)
 vector<complex<double>> DFT(vector<complex<double>> function, double L, int mode, int N) {
     double c = 2 * M_PI * mode / L;
-    vector<complex<double>> ft_phi_x(N);
+    vector<complex<double>> fs_phi_x(N);
     complex<double> i(0, 1);  // imaginary unit i = sqrt(-1)
     
     for(int k = 0; k<N; k++){
-        ft_phi_x[k] = function * exp(-2 * M_PI * complex<double>(0,1) * k / N);
+        complex<double> sum = 0.0;
+        for(int n = 0; n<N; n++){
+            double angle = 2 * M_PI * k * n / N;
+            sum += function[n] * exp(-i * angle);
+        }
+        fs_phi_x[k] += sum;
     }
 
-    return ft_phi_x;
-}
-
-vector<double> IDFT(const vector<complex<double>>& F) {
-    
+    return fs_phi_x;
 }
 
 // Inverse Discrete Fourier Transform (IDFT)
-vector<complex<double>> IDFT(const vector<complex<double>>& F) {
+vector<complex<double>> I_DFT(const vector<complex<double>>& F) {
     int N = F.size();
-    vector<complex<double>> function(N);
+    vector<complex<double>> ft_phi_x(N);
     complex<double> i(0, 1);  // imaginary unit i = sqrt(-1)
 
     for(int n = 0; n < N; n++) {
@@ -47,10 +49,10 @@ vector<complex<double>> IDFT(const vector<complex<double>>& F) {
             double angle = 2 * M_PI * k * n / N;
             sum += F[k] * exp(i * angle);
         }
-        function[n] = sum / static_cast<double>(N);
+        ft_phi_x[n] = sum / static_cast<double>(N);
     }
 
-    return function;
+    return ft_phi_x;
 }
 
 
@@ -65,15 +67,16 @@ int main() {
     double c = 2 * M_PI * mode / L;
     vector<complex<double>> rho(N); 
     vector<complex<double>> function(N);
+    vector<complex<double>> ft_phi_x(N);
      
 
     for (int i = 0; i < N; i++) {
-        rho[i] = eps0 * sin(c);
+        rho[i] = eps0 * sin(c * i);
         function[i] = -rho[i] / eps0;
     }
 
-    vector<complex<double>> ft_phi_x = DFT(function, L, mode, N);
-
+    vector<complex<double>> fs_phi_x = DFT(function, L, mode, N);
+    ft_phi_x = I_DFT(fs_phi_x);
 
     ofstream out("FT.csv");
     out << "x, analytical, FT_real, FT_imaginary" << endl;
