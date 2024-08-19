@@ -58,7 +58,7 @@ void saveVTK(int time_step, World &world, map<string,double**> scalars2D, map<st
 {
 	//generate file name
 	stringstream ss;
-	ss<<"vlasov";
+	ss<<"results/vlasov";
 	if (time_step>=0)
 		ss<<"_"<<setw(6)<<setfill('0')<<time_step;
 	ss<<".vti";	

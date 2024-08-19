@@ -1,0 +1,49 @@
+ %%writefile mpi.cpp
+
+#include <iostream>
+#include <mpi.h>
+
+using namespace std;
+
+int main(int num_args, char *args[]) {
+    // Initialize MPI
+    MPI_Init(&num_args, &args);
+    
+    int my_rank;
+    int N;
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &N);
+
+    // compute my dynamically
+    double my_x = my_rank / (double)(N-1);
+    double my_y = my_x * my_x * my_x;
+
+    //allocate memory
+    double *x = nullptr;
+    double *y = nullptr;
+
+    //define x and y in root?
+    if (my_rank == 0) {
+        x = new double[N];
+        y = new double[N];
+    }
+
+    // Gather x and y from all processes to root 
+    MPI_Gather(&my_x, 1, MPI_DOUBLE, x, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    MPI_Gather(&my_y, 1, MPI_DOUBLE, y, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    if (my_rank == 0) {
+        // integrate
+        double sum = 0;
+        for (int i = 0; i < N-1; i++) sum += 0.5 * (y[i] + y[i+1]) * (x[i+1] - x[i]);    
+        
+        cout << "MPI Integral = " << sum << endl;
+
+        delete[] x;
+        delete[] y;
+    }
+
+    MPI_Finalize();
+    return 0;
+}
