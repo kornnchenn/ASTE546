@@ -91,7 +91,7 @@ public:
 		 part = new Particle[np_alloc];
 	}
 
-
+	double sampleVel(double T);
 	// destructor
 	~Species() {
 		delete[] part;
@@ -129,14 +129,6 @@ public:
   	
   	return current;
   }
-
-  double sampleVel(double T) {
-    double v_th = sqrt(2*Const::Kb*T/m);
-    constexpr int M=6;
-    double R_sum = 0;
-    for (int i=0;i<M;i++) R_sum +=rnd();
-    return v_th/sqrt(2.0) * (R_sum-M/2.0)/sqrt(M/12.0);
-}
   
   void advanceSpecies();
   void rewindVelocity();
@@ -227,8 +219,8 @@ void scatter(double li, dvector &f, double val) {
 int main()
 {
 	World world(41,0,0.1); 		// number of nodes
-	world.setTime(1e-11);
-	int max_ts = 20000;
+	world.setTime(1e-11);   //time step size
+	int max_ts = 20000;     //number of time steps
 	
 	constexpr int N = 400000;
 
@@ -236,37 +228,82 @@ int main()
 
 	double n_real = n0*(world.xm-world.x0);   // number of real particles in domain of volume (xd-x0)*1*1
 
-//Original
 	Species ions = {16*Const::AMU, Const::QE, n_real/N, N, world};
 	Species eles(Const::ME, -Const::QE, n_real/N, N, world);
 
-//Attempt to change charge
-	//Species ions = {16*Const::AMU, 0.1 * EvToK, n_real/N, N, world};
-	//Species eles(Const::ME, -1.0 * EvToK , n_real/N, N, world);
+//original velocities
+   //double vth_i = 500;
+   //double vth_e = 5e5;
 
-   double vth_i = 500;
+//Velocities associated with 0.1 eV for ions, 1eV for electrons
+	//double vth_i = sqrt(( 2.0 * (EvToK * 0.1) * Const::Kb ) / ions.m);
+	//double vth_e = sqrt(( 2.0 * (EvToK * 1.0) * Const::Kb ) / eles.m );
+	//think I did it wrong
+	double T_eles, T_ions;
+	T_eles = EvToK * 1.0;
+	T_ions = EvToK * 0.1;
+	
+	//for quiet start
+	double partSpacing;
+	partSpacing = (world.xm - world.x0) / N;
 	
     // inject stationary particles
     for (int p=0;p<ions.np_alloc;p++) {
 
     	Particle *part = ions[p];
 
+		//Quiet Start
+		//np_alloc or N (400000) particles evenly spaced across a length of
+		//x0 and xm, or 0 and 0.1
+		
+		if (p<(ions.np_alloc-1)) {
+			part->x = world.x0 + (p * partSpacing);
+		}
+		else { 
+			part->x = world.x0 + (p * partSpacing) - (0.0001*partSpacing); 
+		}
+		part->v = 0; 
+		//part->v = vth_i*(rnd()+rnd()+rnd()-1.5);
+		part->v = ions.sampleVel(T_ions);
+		ions.np++;
+		
+		/*
+		//Random Start
     	part->x = world.x0 + rnd()*(world.xm-world.x0);
     	part->v = 0;  //stationary
-
-    	part->v = vth_i*(rnd()+rnd()+rnd()-1.5);
-    	
+    	//part->v = vth_i*(rnd()+rnd()+rnd()-1.5);
+		part->v = ions.sampleVel(T_ions); 
     	ions.np++;   //increment counter of particles
+		*/
     }
 
-	double vth_e = 5e5;
     // inject stationary particles
     for (int p=0;p<eles.np_alloc;p++) {
+
+		//Quiet Start
+		//np_alloc or N (400000) particles evenly spaced across a length of
+		//x0 and xm, or 0 and 0.1
+		
+		if (p<(eles.np_alloc-1)) {
+			eles.part[p].x = world.x0 + (p * partSpacing);
+		}
+		else { 
+			eles.part[p].x = world.x0 + (p * partSpacing) - (0.0001*partSpacing); 
+		}
+		eles.part[p].v = 0; 
+		//eles.part[p].v = vth_e*(rnd()+rnd()+rnd()-1.5);
+		eles.part[p].v = eles.sampleVel(T_eles);
+		eles.np++;
+
+		
+		/*
+		//Random Start
     	eles.part[p].x = world.x0 + rnd()*(world.xm-world.x0);
     	eles.part[p].v = 0;  //stationary
-    	eles.part[p].v = vth_e*(rnd()+rnd()+rnd()-1.5);  
-    	
+    	//eles.part[p].v = vth_e*(rnd()+rnd()+rnd()-1.5);  
+		eles.part[p].v = eles.sampleVel(T_eles); 
     	eles.np++;
+		*/
     }
 
 	int add_skip = 20;
@@ -279,7 +316,7 @@ int main()
 	eles.computeNumberDensity();
 
 	for (int i=0;i<world.ni;i++) {
-		world.rho[i] = ions.den[i]*ions.q + eles.den[i]*eles.q;
+		world.rho[i] = ions.den[i] * ions.q + eles.den[i] * eles.q;
 	}
 	
 	solvePotentialDirect(world);
@@ -289,7 +326,8 @@ int main()
 	
 	// diag file
 	ofstream diag("diag.csv");
-	diag<<"ts,time,num_ions,num_eles,KE_ions,KE_eles,I_ions, I_eles\n";
+	diag<<"ts,time,num_ions,num_eles,KE_ions,KE_eles,I_ions, I_eles, T_ions, T_eles\n";
+	
 	
 	Results results(world, max_ts/add_skip);
 	
@@ -309,14 +347,19 @@ int main()
 		solvePotentialDirect(world);
 		computeEF(world, true);
 
+/* I don't wanna wait for all these to readout in console
 		if (world.ts%50==0) {
 			cout<<"ts: "<<world.ts<<", num_ions: "<<ions.np<<", num_eles: "<<eles.np<<endl;
 		}
-		
+*/
 		if (world.ts%100==0) {
+			double T_ions_ave, T_eles_ave;
+			T_ions_ave = ((ions.getAveKE() * 2.0) / Const::Kb) * (1/EvToK);
+			T_eles_ave = ((eles.getAveKE() * 2.0) / Const::Kb) * (1/EvToK);
+
 			diag<<world.ts<<","<<world.ts*world.dt<<","<<ions.np<<","<<eles.np;
 			diag<<","<<ions.getAveKE()/Const::QE<<","<<eles.getAveKE()/Const::QE;
-			diag<<","<<ions.getCurrent(world)<<","<<-eles.getCurrent(world)<<"\n";			
+			diag<<","<<ions.getCurrent(world)<<","<<-eles.getCurrent(world)<< "," << T_ions_ave << "," << T_eles_ave <<"\n";			
 		}
 		
 		if (world.ts%add_skip==0)
@@ -364,7 +407,6 @@ void Species::advanceSpecies() {
 	}
 }
 
-
 void Species::rewindVelocity() {
 	for (int p=0;p<np;p++) {
 		double li = world.XtoL(part[p].x);    // get particle's grid index
@@ -374,7 +416,6 @@ void Species::rewindVelocity() {
 		part[p].v -= 0.5*q*E_p/m*world.dt;          // integrate velocity through dt
 	}
 }
-
 
 void Species::computeNumberDensity() {
 	size_t ni = den.size();
@@ -543,6 +584,7 @@ bool solvePotentialGS(World &world, int max_it)
 	return true;
 }
 /* computes electric field by differentiating potential*/
+
 void computeEF(World &world, bool second_order) {
 	
 	dvector &phi = world.phi;
@@ -565,7 +607,6 @@ void computeEF(World &world, bool second_order) {
 		ef[ni-1] = (phi[ni-2]-phi[ni-1])/world.dx;
 	}
 }
-
 
 bool Results::outputVTI() {
 
@@ -626,4 +667,12 @@ void Results::addData(Species &ions, Species &eles) {
 	
 	j++;
 	
+}
+
+double Species::sampleVel(double T){
+	double v_th = sqrt(2*Const::Kb*T/m);
+	constexpr int M=6;
+	double R_sum = 0;
+	for (int i=0; i<M; i++) R_sum+=rnd();
+	return v_th/sqrt(2.0) * (R_sum-M/2.0)/sqrt(M/12.0);
 }
