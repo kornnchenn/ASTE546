@@ -79,7 +79,7 @@ void saveVTK(int time_step, World &world, map<string,double**> scalars2D, map<st
 {
 	//generate file name
 	stringstream ss;
-	ss<<"results/vlasov";
+	ss<<"results1/vlasov";
 	if (time_step>=0)
 		ss<<"_"<<setw(6)<<setfill('0')<<time_step;
 	ss<<".vti";	
@@ -257,6 +257,35 @@ void makePeriodic(double **g, int ni, int nj){
 	}
 }
 
+void gaussSeidel(double* x, double* ne, double dx, int ni, int max = 1000, double tolerance = 1e-6) {
+    double dx2 = dx * dx;
+    bool converged = false;
+
+    for (int iter = 0; iter < max; ++iter) {
+        converged = true;
+        for (int i = 0; i < ni; ++i) {
+            // apply periodic boundary conditions from the main code I added
+            int ip1 = (i + 1) % ni;
+            int im1 = (i - 1 + ni) % ni;
+
+            // Gauss-Seidel update
+            double new_x = 0.5 * (x[im1] + x[ip1] - dx2 * (1-ne[i]));
+
+            // Check for convergence
+            if (fabs(new_x - x[i]) > tolerance) {
+                converged = false;
+            }
+
+            x[i] = new_x;
+        }
+
+        if (converged) {
+            break;
+        }
+    }
+}
+
+
 
 int main()
 {
@@ -355,7 +384,10 @@ int main()
 		*/
 		
 		//solution of the Poisson's equation
-		solvePoissonsEquation(world,ne,E);
+		//solvePoissonsEquation(world,ne,E);
+
+		gaussSeidel(E, ne, dx, ni);
+
 		
 		//compute f**
 		for (int i=0;i<ni;i++)
