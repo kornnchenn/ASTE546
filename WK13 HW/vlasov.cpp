@@ -31,18 +31,39 @@ struct World
 	{
 		//this version returns zero if out of bounds
 		double fi = (x-0)/dx;
-		double fj = (v-(-v_max))/dv;		
-		if (fi<0 || fi>ni-1) return 0;
-		if (fj<0 || fj>nj-1) return 0;
+		double fj = (v-(-v_max))/dv;	
 		
+		//no longer out of bounds - adjusting to "wrap"
+		//if (fi<0 || fi>ni-1) return 0;
+		//if (fj<0 || fj>nj-1) return 0;
+		
+		//get the remainer so domain doesnt keep increasing
+		fi = fmod(fi + ni, ni);
+		fj = fmod(fj + nj, nj);
+		
+		//get rid of the integer part = di, dj
 		int i = (int)fi;
 		int j = (int)fj;
 		double di = fi-i;
 		double dj = fj-j;
+
+		//points to the "right", % allows it to wrap
+		int ip1 = (i+1) % ni;
+		int jp1 = (j+1) % nj;
+
+		//bottom left point
 		double val = (1-di)*(1-dj)*f[i][j];
-		if (i<ni-1) val+=(di)*(1-dj)*f[i+1][j];
-		if (j<nj-1) val+=(1-di)*(dj)*f[i][j+1];
-		if (i<ni-1 && j<nj-1) val+=(di)*(dj)*f[i+1][j+1];
+		//if (i<ni-1) val+=(di)*(1-dj)*f[i+1][j];
+		//if (j<nj-1) val+=(1-di)*(dj)*f[i][j+1];
+		//if (i<ni-1 && j<nj-1) val+=(di)*(dj)*f[i+1][j+1];
+		//bottom right point
+		val += (di)*(1-dj)*f[ip1][j];
+		//top left point
+		val += (1-di)*(dj)*f[i][jp1];
+		//top right point
+		val += (di)*(dj)*f[ip1][jp1];
+
+
 		return val;
 		
 	}
@@ -226,6 +247,16 @@ void solvePoissonsEquation(World &world, double *ne, double *E)
 	delete[] x;
 }
 
+void makePeriodic(double **g, int ni, int nj){
+
+	for (int j=0;j<nj;j++)
+	{
+		double average = 0.5 * (g[0][j] + g[ni-1][j]);
+		g[0][j] = average;
+		g[ni-1][j] = average;
+	}
+}
+
 
 int main()
 {
@@ -267,7 +298,8 @@ int main()
 			double v = world.getV(j);
 		
 			double f0 = 1.0/sqrt(2*pi)*exp(-v*v/2.0);
-			f[i][j] = f0*(exp(-(i-0.5*ni)*(i-0.5*ni)/2.0));		
+			//Number 1 initialize new funciton
+			f[i][j] = f0 * (1.0 + cos((2 * pi * x) / world.L));		
 			f[i][j] = f0;
 			
 		}
@@ -342,6 +374,10 @@ int main()
 				double x = world.getX(i);
 				f[i][j] = world.interp(fss,x-v*0.5*dt,v);
 			}		
+
+		makePeriodic(f,ni,nj);
+
+
 			
 	}
 		
